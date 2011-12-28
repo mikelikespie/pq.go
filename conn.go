@@ -423,7 +423,14 @@ func (r *Rows) Next(dest []interface{}) (err error) {
 	panic("not reached")
 }
 
-func (cn *Conn) Begin() (driver.Tx, error) { panic("todo") }
+func (cn *Conn) Begin() (driver.Tx, error) {
+	_, err := cn.Exec("BEGIN", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Tx{cn}, nil
+}
 
 func (cn *Conn) Close() error {
 	return cn.p.Close()
@@ -432,3 +439,19 @@ func (cn *Conn) Close() error {
 func notExpected(c byte) {
 	panic(fmt.Sprintf("pq: unexpected response from server (%c)", c))
 }
+
+
+type Tx struct {
+	cn *Conn
+}
+
+func (t *Tx) Commit() error {
+	_, err := t.cn.Exec("COMMIT", nil)
+	return err
+}
+
+func (t *Tx) Rollback() error {
+	_, err := t.cn.Exec("ROLLBACK", nil)
+	return err
+}
+
